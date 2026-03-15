@@ -55,7 +55,7 @@ export default function App() {
     }
   }
 
-  async function loadMembersFromSupabase() {
+    async function loadMembersFromSupabase() {
     const { data, error } = await supabase
       .from('members')
       .select('*')
@@ -70,10 +70,10 @@ export default function App() {
     if (data) {
       setMembers(
         data.map((member) => ({
-          id: member.number_used,
+          id: String(member.number_used ?? ''),
           whatsappDisplayName: member.whatsapp_display ?? '',
-          groupNumber: member.number_used ?? '',
-          otherNumber: member.other_number ?? '',
+          groupNumber: String(member.number_used ?? ''),
+          otherNumber: String(member.other_number ?? ''),
           fullName: member.full_name ?? '',
           age: member.age ?? '',
           uaeLocation: member.uae_location ?? '',
