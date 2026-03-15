@@ -30,6 +30,7 @@ export default function App() {
 
   async function initialise() {
     const savedSession = window.localStorage.getItem(SESSION_KEY);
+
     if (savedSession) {
       try {
         const parsed = JSON.parse(savedSession);
@@ -38,19 +39,19 @@ export default function App() {
           role: parsed.role,
           loading: false,
         });
+
+        if (isSupabaseConfigured) {
+          await loadMembersFromSupabase();
+        } else {
+          const cached = window.localStorage.getItem(STORAGE_KEY);
+          const parsedMembers = cached ? JSON.parse(cached) : seedMembers;
+          setMembers(parsedMembers);
+        }
       } catch {
         setAuthState({ user: null, role: null, loading: false });
       }
     } else {
       setAuthState({ user: null, role: null, loading: false });
-    }
-
-    if (isSupabaseConfigured) {
-      await loadMembersFromSupabase();
-    } else {
-      const cached = window.localStorage.getItem(STORAGE_KEY);
-      const parsed = cached ? JSON.parse(cached) : seedMembers;
-      setMembers(parsed);
     }
   }
 
@@ -100,6 +101,15 @@ export default function App() {
       const session = { email, role };
       window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       setAuthState({ user: { email }, role, loading: false });
+
+      if (isSupabaseConfigured) {
+        await loadMembersFromSupabase();
+      } else {
+        const cached = window.localStorage.getItem(STORAGE_KEY);
+        const parsedMembers = cached ? JSON.parse(cached) : seedMembers;
+        setMembers(parsedMembers);
+      }
+
       return { error: null };
     }
 
@@ -108,6 +118,7 @@ export default function App() {
 
   async function handleLogout() {
     window.localStorage.removeItem(SESSION_KEY);
+    setMembers([]);
     setAuthState({ user: null, role: null, loading: false });
   }
 
