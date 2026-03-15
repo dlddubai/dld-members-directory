@@ -30,6 +30,7 @@ export default function App() {
   async function initialise() {
     if (isSupabaseConfigured) {
       const { data: auth } = await supabase.auth.getUser();
+
       if (auth?.user) {
         const role = await fetchProfileRole(auth.user.id);
         setAuthState({ user: auth.user, role, loading: false });
@@ -70,9 +71,9 @@ export default function App() {
     if (!error && data) {
       setMembers(
         data.map((member) => ({
-          id: member.id,
-          whatsappDisplayName: member.whatsapp_display_name ?? '',
-          groupNumber: member.group_number ?? '',
+          id: member.number_used,
+          whatsappDisplayName: member.whatsapp_display ?? '',
+          groupNumber: member.number_used ?? '',
           otherNumber: member.other_number ?? '',
           fullName: member.full_name ?? '',
           age: member.age ?? '',
@@ -81,9 +82,12 @@ export default function App() {
           profession: member.profession ?? '',
           livingStatus: member.living_status ?? '',
           socialMedia: member.social_media ?? '',
-          eidUploaded: Boolean(member.eid_uploaded),
-          verified: Boolean(member.verified),
-          businessOwner: Boolean(member.business_owner),
+          eidUploaded:
+            String(member.eid_uploaded).toLowerCase() === 'yes' || member.eid_uploaded === true,
+          verified:
+            String(member.verified).toLowerCase() === 'yes' || member.verified === true,
+          businessOwner:
+            String(member.business_owner).toLowerCase() === 'yes' || member.business_owner === true,
         }))
       );
     }
@@ -117,19 +121,19 @@ export default function App() {
   async function createMember(input) {
     if (isSupabaseConfigured) {
       await supabase.from('members').insert({
-        full_name: input.fullName,
-        whatsapp_display_name: input.whatsappDisplayName,
-        group_number: input.groupNumber,
+        whatsapp_display: input.whatsappDisplayName,
+        number_used: input.groupNumber,
         other_number: input.otherNumber,
+        full_name: input.fullName,
         age: input.age,
         uae_location: input.uaeLocation,
         uk_location: input.ukLocation,
         profession: input.profession,
         living_status: input.livingStatus,
         social_media: input.socialMedia,
-        eid_uploaded: input.eidUploaded,
-        verified: input.verified,
-        business_owner: input.businessOwner,
+        eid_uploaded: input.eidUploaded ? 'Yes' : 'No',
+        verified: input.verified ? 'Yes' : 'No',
+        business_owner: input.businessOwner ? 'Yes' : 'No',
       });
       await loadMembersFromSupabase();
       return;
@@ -149,21 +153,21 @@ export default function App() {
       await supabase
         .from('members')
         .update({
-          full_name: input.fullName,
-          whatsapp_display_name: input.whatsappDisplayName,
-          group_number: input.groupNumber,
+          whatsapp_display: input.whatsappDisplayName,
+          number_used: input.groupNumber,
           other_number: input.otherNumber,
+          full_name: input.fullName,
           age: input.age,
           uae_location: input.uaeLocation,
           uk_location: input.ukLocation,
           profession: input.profession,
           living_status: input.livingStatus,
           social_media: input.socialMedia,
-          eid_uploaded: input.eidUploaded,
-          verified: input.verified,
-          business_owner: input.businessOwner,
+          eid_uploaded: input.eidUploaded ? 'Yes' : 'No',
+          verified: input.verified ? 'Yes' : 'No',
+          business_owner: input.businessOwner ? 'Yes' : 'No',
         })
-        .eq('id', input.id);
+        .eq('number_used', input.id);
       await loadMembersFromSupabase();
       return;
     }
@@ -178,7 +182,7 @@ export default function App() {
 
   async function deleteMember(id) {
     if (isSupabaseConfigured) {
-      await supabase.from('members').delete().eq('id', id);
+      await supabase.from('members').delete().eq('number_used', id);
       await loadMembersFromSupabase();
       return;
     }
