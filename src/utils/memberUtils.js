@@ -5,14 +5,14 @@ export function normaliseBool(value) {
 }
 
 export function displayIdentity(member) {
-  if (member.socialMedia?.trim()) return member.socialMedia.trim();
+  if (String(member.socialMedia ?? '').trim()) return String(member.socialMedia).trim();
   if (member.eidUploaded) return 'EID uploaded';
   return 'Not provided';
 }
 
 export function uniqueValues(items, key) {
   return [...new Set(items.map((item) => item[key]).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b)
+    String(a).localeCompare(String(b))
   );
 }
 
@@ -28,11 +28,13 @@ export function filterMembers(members, filters) {
 
     const professionMatch =
       !filters.profession ||
-      member.profession.toLowerCase().includes(filters.profession.toLowerCase());
+      String(member.profession ?? '')
+        .toLowerCase()
+        .includes(String(filters.profession ?? '').toLowerCase());
 
     const numberMatch =
       !filters.number ||
-      member.groupNumber.toLowerCase().includes(filters.number.toLowerCase());
+      String(member.groupNumber ?? '').includes(String(filters.number ?? ''));
 
     return verifiedMatch && ukLocationMatch && professionMatch && numberMatch;
   });
