@@ -11,6 +11,7 @@ import { isSupabaseConfigured, supabase } from './lib/supabase';
 const DEMO_ADMIN = { email: 'admin@dld.local', password: 'dld12345', role: 'admin' };
 const DEMO_VIEWER = { email: 'viewer@dld.local', password: 'dld12345', role: 'viewer' };
 const STORAGE_KEY = 'dld-members-demo-data';
+const SESSION_KEY = 'dld-members-session';
 
 export default function App() {
   const [authState, setAuthState] = useState({ user: null, role: null, loading: true });
@@ -28,38 +29,29 @@ export default function App() {
   }, []);
 
   async function initialise() {
-    if (isSupabaseConfigured) {
-      const { data: auth } = await supabase.auth.getUser();
-
-      if (auth?.user) {
-        const role = await fetchProfileRole(auth.user.id);
-        setAuthState({ user: auth.user, role, loading: false });
-        await loadMembersFromSupabase();
-      } else {
+    const savedSession = window.localStorage.getItem(SESSION_KEY);
+    if (savedSession) {
+      try {
+        const parsed = JSON.parse(savedSession);
+        setAuthState({
+          user: { email: parsed.email },
+          role: parsed.role,
+          loading: false,
+        });
+      } catch {
         setAuthState({ user: null, role: null, loading: false });
       }
+    } else {
+      setAuthState({ user: null, role: null, loading: false });
+    }
 
-      supabase.auth.onAuthStateChange(async (_event, session) => {
-        const user = session?.user ?? null;
-        if (user) {
-          const role = await fetchProfileRole(user.id);
-          setAuthState({ user, role, loading: false });
-          await loadMembersFromSupabase();
-        } else {
-          setAuthState({ user: null, role: null, loading: false });
-        }
-      });
+    if (isSupabaseConfigured) {
+      await loadMembersFromSupabase();
     } else {
       const cached = window.localStorage.getItem(STORAGE_KEY);
       const parsed = cached ? JSON.parse(cached) : seedMembers;
       setMembers(parsed);
-      setAuthState({ user: null, role: null, loading: false });
     }
-  }
-
-  async function fetchProfileRole(userId) {
-    const { data } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
-    return data?.role ?? 'viewer';
   }
 
   async function loadMembersFromSupabase() {
@@ -94,16 +86,13 @@ export default function App() {
   }
 
   async function handleLogin(email, password) {
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return error ? { error: error.message } : { error: null };
-    }
-
     if (
       (email === DEMO_ADMIN.email && password === DEMO_ADMIN.password) ||
       (email === DEMO_VIEWER.email && password === DEMO_VIEWER.password)
     ) {
       const role = email === DEMO_ADMIN.email ? DEMO_ADMIN.role : DEMO_VIEWER.role;
+      const session = { email, role };
+      window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       setAuthState({ user: { email }, role, loading: false });
       return { error: null };
     }
@@ -112,9 +101,7 @@ export default function App() {
   }
 
   async function handleLogout() {
-    if (isSupabaseConfigured) {
-      await supabase.auth.signOut();
-    }
+    window.localStorage.removeItem(SESSION_KEY);
     setAuthState({ user: null, role: null, loading: false });
   }
 
@@ -199,12 +186,8 @@ export default function App() {
     return <div className="loading-shell">Loading DLD Members Directory…</div>;
   }
 
-  if (!authState.user && !isSupabaseConfigured) {
-    return <LoginView onLogin={handleLogin} modeLabel="Demo mode is active until you add Supabase keys." />;
-  }
-
-  if (!authState.user && isSupabaseConfigured) {
-    return <LoginView onLogin={handleLogin} modeLabel="Supabase mode is active." />;
+  if (!authState.user) {
+    return <LoginView onLogin={handleLogin} modeLabel="Private shared-access mode is active." />;
   }
 
   return (
