@@ -45,7 +45,7 @@ export default function LoginView({ onLogin, modeLabel }) {
           <button type="submit">Log in</button>
         </form>
         <div className="login-note">
-          Demo admin: <code>admin@dld.local</code> / <code>dld12345</code>
+          Use an approved Supabase account to sign in.
         </div>
       </div>
     </div>
