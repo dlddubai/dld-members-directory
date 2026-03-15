@@ -60,7 +60,13 @@ export default function App() {
       .select('*')
       .order('full_name', { ascending: true });
 
-    if (!error && data) {
+    if (error) {
+      console.error('Supabase members fetch error:', error);
+      alert(`Members fetch failed: ${error.message}`);
+      return;
+    }
+
+    if (data) {
       setMembers(
         data.map((member) => ({
           id: member.number_used,
